@@ -1,0 +1,292 @@
+from tkinter import *
+from PIL import ImageTk, Image
+from tkinter import messagebox
+import pymysql
+
+# Database connection parameters
+host = "localhost"
+user = "root"
+password = ""
+database = "libpy"
+port = 3306
+
+# Global variables
+connection = None
+cursor = None
+bookTable = "books"
+
+# Connect to the MySQL database
+try:
+    connection = pymysql.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database,
+        port=port
+    )
+    print("Database connection successful!")
+    cursor = connection.cursor()
+except pymysql.MySQLError as e:
+    print(f"Error connecting to database: {e}")
+    messagebox.showerror("Database Error", f"Error connecting to database:\n{e}")
+
+
+# Function to add a book
+def bookRegister():
+    bid = bookInfo1.get()
+    title = bookInfo2.get()
+    author = bookInfo3.get()
+    status = bookInfo4.get().lower()
+
+    insertBooks = f"INSERT INTO {bookTable} (bid, title, author, status) VALUES (%s, %s, %s, %s)"
+    try:
+        cursor.execute(insertBooks, (bid, title, author, status))
+        connection.commit()
+        messagebox.showinfo('Success', "Book added successfully")
+    except Exception as e:
+        messagebox.showerror("Error", f"Can't add data to database: {e}")
+    root.destroy()
+
+
+def addBookPage():
+    global bookInfo1, bookInfo2, bookInfo3, bookInfo4, root
+    root = Toplevel()
+    root.title("Add Book")
+    root.geometry("800x600")
+
+    Canvas1 = Canvas(root, bg="#ff6e40")
+    Canvas1.pack(expand=True, fill=BOTH)
+
+    headingFrame1 = Frame(root, bg="#FFBB00", bd=5)
+    headingFrame1.place(relx=0.25, rely=0.1, relwidth=0.5, relheight=0.13)
+    headingLabel = Label(headingFrame1, text="Add Book", bg='black', fg='white', font=('Courier', 15))
+    headingLabel.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+    labelFrame = Frame(root, bg='black')
+    labelFrame.place(relx=0.1, rely=0.3, relwidth=0.8, relheight=0.5)
+
+    # Book ID
+    lb1 = Label(labelFrame, text="Book ID: ", bg='black', fg='white')
+    lb1.place(relx=0.05, relheight=0.08)
+    bookInfo1 = Entry(labelFrame)
+    bookInfo1.place(relx=0.3, relwidth=0.62, relheight=0.08)
+
+    # Title
+    lb2 = Label(labelFrame, text="Title: ", bg='black', fg='white')
+    lb2.place(relx=0.05, rely=0.2, relheight=0.08)
+    bookInfo2 = Entry(labelFrame)
+    bookInfo2.place(relx=0.3, rely=0.2, relwidth=0.62, relheight=0.08)
+
+    # Author
+    lb3 = Label(labelFrame, text="Author: ", bg='black', fg='white')
+    lb3.place(relx=0.05, rely=0.4, relheight=0.08)
+    bookInfo3 = Entry(labelFrame)
+    bookInfo3.place(relx=0.3, rely=0.4, relwidth=0.62, relheight=0.08)
+
+    # Status
+    lb4 = Label(labelFrame, text="Status (Avail/Issued): ", bg='black', fg='white')
+    lb4.place(relx=0.05, rely=0.6, relheight=0.08)
+    bookInfo4 = Entry(labelFrame)
+    bookInfo4.place(relx=0.3, rely=0.6, relwidth=0.62, relheight=0.08)
+
+    # Submit Button
+    SubmitBtn = Button(root, text="SUBMIT", bg='#d1ccc0', fg='black', command=bookRegister)
+    SubmitBtn.place(relx=0.28, rely=0.9, relwidth=0.18, relheight=0.08)
+
+    quitBtn = Button(root, text="Quit", bg='#f7f1e3', fg='black', command=root.destroy)
+    quitBtn.place(relx=0.53, rely=0.9, relwidth=0.18, relheight=0.08)
+
+
+def viewBooksPage():
+   
+    root = Toplevel()
+    root.title("View Books")
+    root.geometry("600x500")
+    root.config(bg="#12a4d9")
+
+    Canvas1 = Canvas(root, bg="#12a4d9")
+    Canvas1.pack(expand=True, fill=BOTH)
+
+    headingFrame1 = Frame(root, bg="#FFBB00", bd=5)
+    headingFrame1.place(relx=0.25, rely=0.1, relwidth=0.5, relheight=0.13)
+
+    headingLabel = Label(headingFrame1, text="View Books", bg='black', fg='white', font=('Courier', 15))
+    headingLabel.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+    labelFrame = Frame(root, bg='black')
+    labelFrame.place(relx=0.1, rely=0.3, relwidth=0.8, relheight=0.5)
+
+    Label(labelFrame, text="%-10s%-40s%-30s%-20s" % ('BID', 'Title', 'Author', 'Status'), bg='black', fg='white').place(relx=0.07, rely=0.1)
+    Label(labelFrame, text="----------------------------------------------------------------------------", bg='black', fg='white').place(relx=0.05, rely=0.2)
+
+    getBooks = "SELECT * FROM {}".format(bookTable)
+    try:
+        cursor.execute(getBooks)
+        connection.commit()
+        y = 0.25
+        for i in cursor.fetchall():
+            Label(labelFrame, text="%-10s%-30s%-30s%-20s" % (i[0], i[1], i[2], i[3]), bg='black', fg='white').place(relx=0.07, rely=y)
+            y += 0.1
+    except pymysql.MySQLError as e:
+        messagebox.showinfo("Failed to fetch records", f"Error: {e}")
+
+    Button(root, text="Quit", bg='#f7f1e3', fg='black', command=root.destroy).place(relx=0.4, rely=0.9, relwidth=0.18, relheight=0.08)
+
+
+
+
+def deleteBooksPage():
+    global bookInfo1, Canvas1, root
+    
+    root = Tk()
+    root.title("Library")
+    root.minsize(width=400, height=400)
+    root.geometry("600x500")
+
+    Canvas1 = Canvas(root)
+    Canvas1.config(bg="#006B38")
+    Canvas1.pack(expand=True, fill=BOTH)
+        
+    headingFrame1 = Frame(root, bg="#FFBB00", bd=5)
+    headingFrame1.place(relx=0.25, rely=0.1, relwidth=0.5, relheight=0.13)
+        
+    headingLabel = Label(headingFrame1, text="Delete Book", bg='black', fg='white', font=('Courier', 15))
+    headingLabel.place(relx=0, rely=0, relwidth=1, relheight=1)
+    
+    labelFrame = Frame(root, bg='black')
+    labelFrame.place(relx=0.1, rely=0.3, relwidth=0.8, relheight=0.5)   
+        
+    # Book ID to Delete
+    lb2 = Label(labelFrame, text="Book ID: ", bg='black', fg='white')
+    lb2.place(relx=0.05, rely=0.5)
+        
+    bookInfo1 = Entry(labelFrame)
+    bookInfo1.place(relx=0.3, rely=0.5, relwidth=0.62)
+    
+    # Submit Button
+    SubmitBtn = Button(root, text="SUBMIT", bg='#d1ccc0', fg='black', command=deleteBook)
+    SubmitBtn.place(relx=0.28, rely=0.9, relwidth=0.18, relheight=0.08)
+    
+    quitBtn = Button(root, text="Quit", bg='#f7f1e3', fg='black', command=root.destroy)
+    quitBtn.place(relx=0.53, rely=0.9, relwidth=0.18, relheight=0.08)
+    
+    root.mainloop()
+
+def returnBooksPage():
+    global bookInfo1, root
+    root = Tk()
+    root.title("Library")
+    root.minsize(width=400, height=400)
+    root.geometry("600x500")
+
+    Canvas1 = Canvas(root)
+    Canvas1.config(bg="#006B38")
+    Canvas1.pack(expand=True, fill=BOTH)
+
+    headingFrame1 = Frame(root, bg="#FFBB00", bd=5)
+    headingFrame1.place(relx=0.25, rely=0.1, relwidth=0.5, relheight=0.13)
+
+    headingLabel = Label(headingFrame1, text="Return Book", bg='black', fg='white', font=('Courier', 15))
+    headingLabel.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+    labelFrame = Frame(root, bg='black')
+    labelFrame.place(relx=0.1, rely=0.3, relwidth=0.8, relheight=0.5)   
+
+    lb1 = Label(labelFrame, text="Book ID: ", bg='black', fg='white')
+    lb1.place(relx=0.05, rely=0.5)
+
+    bookInfo1 = Entry(labelFrame)
+    bookInfo1.place(relx=0.3, rely=0.5, relwidth=0.62)
+
+    # Submit Button
+    SubmitBtn = Button(root, text="Return", bg='#d1ccc0', fg='black', command=lambda: return_book(bookInfo1))
+    SubmitBtn.place(relx=0.28, rely=0.9, relwidth=0.18, relheight=0.08)
+
+    quitBtn = Button(root, text="Quit", bg='#f7f1e3', fg='black', command=root.destroy)
+    quitBtn.place(relx=0.53, rely=0.9, relwidth=0.18, relheight=0.08)
+
+    root.mainloop()
+
+
+def issueBooksPage():
+    global issueBtn, labelFrame, inf1, inf2, quitBtn, root
+
+    root = Tk()
+    root.title("Library")
+    root.minsize(width=400, height=400)
+    root.geometry("600x500")
+
+    Canvas1 = Canvas(root)
+    Canvas1.config(bg="#D6ED17")
+    Canvas1.pack(expand=True, fill=BOTH)
+
+    headingFrame1 = Frame(root, bg="#FFBB00", bd=5)
+    headingFrame1.place(relx=0.25, rely=0.1, relwidth=0.5, relheight=0.13)
+
+    headingLabel = Label(headingFrame1, text="Issue Book", bg='black', fg='white', font=('Courier', 15))
+    headingLabel.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+    labelFrame = Frame(root, bg='black')
+    labelFrame.place(relx=0.1, rely=0.3, relwidth=0.8, relheight=0.5)
+
+    # Book ID
+    lb1 = Label(labelFrame, text="Book ID : ", bg='black', fg='white')
+    lb1.place(relx=0.05, rely=0.2)
+
+    inf1 = Entry(labelFrame)
+    inf1.place(relx=0.3, rely=0.2, relwidth=0.62)
+
+    # Issued To Student name
+    lb2 = Label(labelFrame, text="Issued To : ", bg='black', fg='white')
+    lb2.place(relx=0.05, rely=0.4)
+
+    inf2 = Entry(labelFrame)
+    inf2.place(relx=0.3, rely=0.4, relwidth=0.62)
+
+    # Issue Button
+    issueBtn = Button(root, text="Issue", bg='#d1ccc0', fg='black', command=issue)
+    issueBtn.place(relx=0.28, rely=0.9, relwidth=0.18, relheight=0.08)
+
+    quitBtn = Button(root, text="Quit", bg='#aaa69d', fg='black', command=root.destroy)
+    quitBtn.place(relx=0.53, rely=0.9, relwidth=0.18, relheight=0.08)
+
+    root.mainloop()
+
+
+def loginPage():
+    messagebox.showinfo("Login", "Redirected to Login Page")
+
+
+def signupPage():
+    messagebox.showinfo("Signup", "Redirected to Signup Page")
+
+
+# Main navigation menu
+def navigationMenu():
+    root = Tk()
+    root.title("Library Management System")
+    root.geometry("800x600")
+
+    Label(root, text="Library Management System", bg="#ff6e40", fg="white", font=("Courier", 24)).pack(fill=X)
+
+    menuBar = Menu(root)
+
+    menuBar.add_command(label="Add Book", command=addBookPage)
+    menuBar.add_command(label="View Books", command=viewBooksPage)
+    menuBar.add_command(label="Delete Books", command=deleteBooksPage)
+    menuBar.add_command(label="Return Books", command=returnBooksPage)
+    menuBar.add_command(label="Issue Books", command=issueBooksPage)
+    menuBar.add_command(label="Login", command=loginPage)
+    menuBar.add_command(label="Signup", command=signupPage)
+
+    root.config(menu=menuBar)
+    root.mainloop()
+
+
+navigationMenu()
+
+# Close database connection
+if connection:
+    cursor.close()
+    connection.close()
+    print("Database connection closed.")
